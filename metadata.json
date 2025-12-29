@@ -1,0 +1,5 @@
+{
+  "name": "MyBlog",
+  "description": "A modern, AI-enhanced blogging platform featuring seamless CRUD operations, user authentication, and intelligent content generation powered by Gemini.",
+  "requestFramePermissions": []
+}
