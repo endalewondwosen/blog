@@ -153,16 +153,23 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim()) return;
 
     setIsSaving(true);
     try {
-        let excerpt = content.substring(0, 150) + "...";
-        try {
-            excerpt = await api.generateSummary(content);
-        } catch(e) {
-            console.warn("Summary generation failed, using fallback");
+        let excerpt = "";
+        
+        // Only generate summary/excerpt if there is content
+        if (content.trim()) {
+            excerpt = content.substring(0, 150) + "...";
+            try {
+                excerpt = await api.generateSummary(content);
+            } catch(e) {
+                console.warn("Summary generation failed, using fallback");
+            }
         }
+
+        const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
         const postData = {
             title,
@@ -173,7 +180,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
             authorId: user.id,
             authorName: user.username,
             authorAvatar: user.avatarUrl,
-            readTimeMinutes: Math.ceil(content.split(' ').length / 200),
+            readTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
         };
 
         if (id) {
@@ -231,7 +238,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
             </button>
             <button
                 onClick={handleSave}
-                disabled={!title.trim() || !content.trim() || isSaving}
+                disabled={!title.trim() || isSaving}
                 className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium min-w-[100px] justify-center text-sm flex-grow sm:flex-grow-0"
             >
                 {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
