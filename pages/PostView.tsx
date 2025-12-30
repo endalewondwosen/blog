@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe, Share2, Linkedin, Twitter, Link as LinkIcon, Check, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe, Share2, Linkedin, Twitter, Link as LinkIcon, Check, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BlogPost, User } from '../types';
 import { api } from '../services/api';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -50,6 +50,9 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
 
+  // Carousel Ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (id) {
       const fetchPost = async () => {
@@ -81,7 +84,7 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                         const bMatch = bTags.filter(t => currentTags.includes(t)).length;
                         return bMatch - aMatch;
                     })
-                    .slice(0, 3);
+                    .slice(0, 8); // Increased from 3 to 8 for carousel
                 setRelatedPosts(related);
 
             } else {
@@ -262,6 +265,18 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         alert("Failed to play audio.");
     } finally {
         setIsAudioLoading(false);
+    }
+  };
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+        const { current } = scrollContainerRef;
+        const scrollAmount = 340; // Approx card width + gap
+        if (direction === 'left') {
+            current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
     }
   };
 
@@ -489,15 +504,39 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         </div>
       </div>
       
-      {/* Related Posts */}
+      {/* Related Posts Carousel */}
       {relatedPosts.length > 0 && (
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">Related Articles</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 mb-20">
+              <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-2xl font-bold text-gray-900">Related Articles</h3>
+                 {relatedPosts.length > 3 && (
+                     <div className="flex gap-2">
+                         <button onClick={() => scrollCarousel('left')} className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors" aria-label="Scroll left">
+                             <ChevronLeft size={20} />
+                         </button>
+                         <button onClick={() => scrollCarousel('right')} className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors" aria-label="Scroll right">
+                             <ChevronRight size={20} />
+                         </button>
+                     </div>
+                 )}
+              </div>
+              
+              <div 
+                  ref={scrollContainerRef}
+                  className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scroll-smooth hide-scrollbar"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                   {relatedPosts.map(p => (
-                      <PostCard key={p.id} post={p} />
+                      <div key={p.id} className="min-w-[280px] md:min-w-[340px] snap-center">
+                          <PostCard post={p} />
+                      </div>
                   ))}
               </div>
+              <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+              `}</style>
           </div>
       )}
 
