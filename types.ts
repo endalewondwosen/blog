@@ -5,6 +5,7 @@ export interface User {
   joinedAt: number;
   bookmarks: string[]; // Array of Post IDs
   bio?: string;
+  role: 'user' | 'admin';
 }
 
 export interface Comment {

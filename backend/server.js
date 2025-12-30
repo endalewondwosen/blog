@@ -13,7 +13,44 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
 
-// Middleware
+// --- Security Middleware ---
+
+// 1. Security Headers (Helmet-lite)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// 2. Simple Rate Limiter (In-Memory)
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_REQUESTS = 100; // per IP
+
+app.use((req, res, next) => {
+  const ip = req.ip;
+  const now = Date.now();
+  
+  if (!rateLimit.has(ip)) {
+    rateLimit.set(ip, { count: 1, startTime: now });
+  } else {
+    const data = rateLimit.get(ip);
+    if (now - data.startTime > RATE_LIMIT_WINDOW) {
+      // Reset window
+      rateLimit.set(ip, { count: 1, startTime: now });
+    } else {
+      data.count++;
+      if (data.count > MAX_REQUESTS) {
+        return res.status(429).json({ message: 'Too many requests, please try again later.' });
+      }
+    }
+  }
+  next();
+});
+
+// --- Standard Middleware ---
 app.use(cors());
 app.use(express.json());
 
@@ -54,12 +91,14 @@ app.post('/api/auth/register', async (req, res) => {
       username: username.toLowerCase(),
       password: hashedPassword,
       avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
-      bookmarks: []
+      bookmarks: [],
+      role: 'user' // Default role
     });
     
     await user.save();
     
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
+    // Include role in token
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
     res.status(201).json({ user, token });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -76,7 +115,8 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
+    // Include role in token
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
     res.json({ user, token });
   } catch (err) {
     res.status(500).json({ message: err.message });

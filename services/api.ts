@@ -68,7 +68,8 @@ const INITIAL_USERS = [
     avatarUrl: 'https://picsum.photos/100/100?random=100',
     joinedAt: Date.now() - 100000000,
     bookmarks: ['2'],
-    bio: "Tech enthusiast, avid writer, and coffee lover. I explore the intersection of technology and creativity."
+    bio: "Tech enthusiast, avid writer, and coffee lover. I explore the intersection of technology and creativity.",
+    role: 'user' as const
   },
   {
     id: 'alice-doe',
@@ -77,7 +78,8 @@ const INITIAL_USERS = [
     avatarUrl: 'https://picsum.photos/100/100?random=101',
     joinedAt: Date.now() - 50000000,
     bookmarks: [],
-    bio: "UI/UX Designer with a passion for minimalism and accessible design patterns."
+    bio: "UI/UX Designer with a passion for minimalism and accessible design patterns.",
+    role: 'user' as const
   }
 ];
 
@@ -218,7 +220,8 @@ class ApiClient {
             avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
             joinedAt: Date.now(),
             bookmarks: [],
-            bio: "I'm a new writer here!"
+            bio: "I'm a new writer here!",
+            role: 'user' as const
         };
 
         users.push(newUser);

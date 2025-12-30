@@ -7,6 +7,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import CommentSection from '../components/CommentSection';
 import AskArticleWidget from '../components/AskArticleWidget';
 import PostCard from '../components/PostCard';
+import SEO from '../components/SEO';
 
 interface PostViewProps {
   user: User | null;
@@ -308,6 +309,14 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   return (
     <div className="min-h-screen bg-white pb-20">
       
+      {/* Dynamic SEO Tags */}
+      <SEO 
+        title={post.title} 
+        description={post.excerpt} 
+        image={post.coverUrl}
+        type="article"
+      />
+
       {/* Reading Progress Bar */}
       <div className="fixed top-0 left-0 h-1.5 bg-indigo-100 z-[60] w-full">
          <div 

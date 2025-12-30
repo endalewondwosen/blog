@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Search, TrendingUp, Mail, ArrowRight, Clock, Calenda
 import { BlogPost } from '../types';
 import { api } from '../services/api';
 import PostCard from '../components/PostCard';
+import SEO from '../components/SEO';
 
 const Home: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -65,6 +66,11 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
+      <SEO 
+        title="MyBlog - Stories that Inspire" 
+        description="Discover insightful articles about AI, Design, and Development on MyBlog."
+      />
+
       {/* Hero Section */}
       <div className="relative bg-white border-b border-gray-100 overflow-hidden">
         {/* Background Decor elements */}
