@@ -1,17 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Clock, Heart } from 'lucide-react';
 import { BlogPost } from '../types';
 
 interface PostCardProps {
   post: BlogPost;
+  actions?: React.ReactNode;
+  showAuthor?: boolean;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, actions, showAuthor = true }) => {
+  const navigate = useNavigate();
+
   return (
-    <Link 
-      to={`/post/${post.id}`}
-      className="group flex flex-col bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-300 transform hover:-translate-y-1 h-full"
+    <div 
+      onClick={() => navigate(`/post/${post.id}`)}
+      className="group flex flex-col bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-300 transform hover:-translate-y-1 h-full cursor-pointer"
     >
       <div className="relative h-56 overflow-hidden">
         <div className="absolute inset-0 bg-gray-200 animate-pulse" /> {/* Loading placeholder effect underneath */}
@@ -36,6 +40,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 </span>
             )}
         </div>
+
+        {/* Likes Badge */}
+        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm text-gray-700">
+            <Heart size={12} className="text-rose-500 fill-rose-500" />
+            {post.likes}
+        </div>
       </div>
       
       <div className="p-6 flex flex-col flex-grow">
@@ -53,22 +63,34 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           {post.excerpt}
         </p>
         
-        <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
-          <div className="flex items-center gap-2">
-            <img 
-                src={post.authorAvatar} 
-                alt={post.authorName}
-                className="w-6 h-6 rounded-full"
-            />
-            <span className="text-xs font-medium text-gray-700">{post.authorName}</span>
-          </div>
-          <div className="flex items-center gap-1 text-gray-400 text-xs">
-            <Clock size={14} />
-            <span>{post.readTimeMinutes} min read</span>
-          </div>
+        <div className="mt-auto pt-4 border-t border-gray-50">
+            {actions ? (
+                /* Render Custom Actions if provided (stops propagation to prevent card click) */
+                <div onClick={(e) => e.stopPropagation()} className="flex gap-2 w-full">
+                    {actions}
+                </div>
+            ) : (
+                /* Standard Footer */
+                <div className="flex items-center justify-between">
+                    {showAuthor && (
+                        <div className="flex items-center gap-2">
+                            <img 
+                                src={post.authorAvatar} 
+                                alt={post.authorName}
+                                className="w-6 h-6 rounded-full"
+                            />
+                            <span className="text-xs font-medium text-gray-700">{post.authorName}</span>
+                        </div>
+                    )}
+                    <div className="flex items-center gap-1 text-gray-400 text-xs ml-auto">
+                        <Clock size={14} />
+                        <span>{post.readTimeMinutes} min read</span>
+                    </div>
+                </div>
+            )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 };
 

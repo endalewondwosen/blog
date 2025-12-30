@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, BlogPost } from '../types';
 import { api } from '../services/api';
 import { Calendar, FileText, Heart, Edit2, Trash2, Loader2, Plus, Bookmark, PenSquare, BookmarkMinus, TrendingUp, ArrowRight } from 'lucide-react';
+import PostCard from '../components/PostCard';
 
 interface ProfileProps {
   user: User;
@@ -189,61 +190,53 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       ) : displayedPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayedPosts.map(post => (
-                  <div key={post.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all group flex flex-col h-full cursor-pointer" onClick={() => navigate(`/post/${post.id}`)}>
-                      <div className="relative h-40 overflow-hidden bg-gray-100">
-                          <img 
-                             src={post.coverUrl} 
-                             alt={post.title} 
-                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                          />
-                          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-sm">
-                              <Heart size={12} className="text-rose-500 fill-rose-500" />
-                              {post.likes}
-                          </div>
-                      </div>
-                      <div className="p-5 flex flex-col flex-grow">
-                          <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{post.title}</h3>
-                          <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
-                              <Calendar size={12} />
-                              {new Date(post.createdAt).toLocaleDateString()}
-                          </div>
-                          
-                          <div className="mt-auto flex gap-2 pt-4 border-t border-gray-50">
-                              <button 
-                                 className="flex-1 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-1"
-                              >
-                                  <FileText size={16} /> View
-                              </button>
-                              
-                              {activeTab === 'posts' ? (
-                                  <>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); navigate(`/edit/${post.id}`); }}
-                                        className="flex-1 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center justify-center gap-1"
-                                    >
-                                        <Edit2 size={16} /> Edit
-                                    </button>
-                                    <button 
-                                        onClick={(e) => handleDelete(e, post.id)}
-                                        disabled={deletingId === post.id}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center"
-                                        title="Delete Post"
-                                    >
-                                        {deletingId === post.id ? <Loader2 size={16} className="animate-spin text-red-600" /> : <Trash2 size={16} />}
-                                    </button>
-                                  </>
-                              ) : (
+                 <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    showAuthor={false}
+                    actions={
+                        activeTab === 'posts' ? (
+                            <>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`); }}
+                                    className="flex-1 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-1 bg-gray-50 border border-gray-100"
+                                >
+                                    <FileText size={16} /> View
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/edit/${post.id}`); }}
+                                    className="flex-1 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center justify-center gap-1 bg-indigo-50 border border-indigo-100"
+                                >
+                                    <Edit2 size={16} /> Edit
+                                </button>
+                                <button 
+                                    onClick={(e) => handleDelete(e, post.id)}
+                                    disabled={deletingId === post.id}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center border border-transparent"
+                                    title="Delete Post"
+                                >
+                                    {deletingId === post.id ? <Loader2 size={16} className="animate-spin text-red-600" /> : <Trash2 size={16} />}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`); }}
+                                    className="flex-1 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-1 bg-gray-50 border border-gray-100"
+                                >
+                                    <FileText size={16} /> Read
+                                </button>
                                 <button 
                                     onClick={(e) => handleRemoveBookmark(e, post.id)}
-                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center"
+                                    className="px-3 py-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center"
                                     title="Remove from reading list"
                                 >
-                                    <BookmarkMinus size={16} />
+                                    <BookmarkMinus size={18} />
                                 </button>
-                              )}
-                          </div>
-                      </div>
-                  </div>
+                            </>
+                        )
+                    }
+                 />
               ))}
           </div>
       ) : (

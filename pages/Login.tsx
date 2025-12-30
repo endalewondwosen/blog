@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, ArrowRight, Loader2, UserPlus, Lock, User } from 'lucide-react';
+import { LogIn, ArrowRight, Loader2, UserPlus, Lock, User, Info } from 'lucide-react';
 import { api } from '../services/api';
 import { User as UserType } from '../types';
 
@@ -41,7 +41,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 sm:p-10 transition-all">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -54,6 +54,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             {isRegistering ? 'Join our community of writers' : 'Enter your details to access your account'}
           </p>
         </div>
+
+        {/* Demo Credentials Hint */}
+        {!isRegistering && (
+          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 text-sm text-blue-800">
+            <Info className="flex-shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="font-semibold mb-1">Demo Credentials:</p>
+              <p>Username: <span className="font-mono bg-blue-100 px-1 rounded">demo-user</span></p>
+              <p>Password: <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
@@ -96,7 +108,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
 
           {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center justify-center">
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center justify-center animate-pulse">
                   {error}
               </div>
           )}
@@ -116,6 +128,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 onClick={() => {
                     setIsRegistering(!isRegistering);
                     setError('');
+                    // Clear inputs when switching modes for better UX
+                    setUsername('');
+                    setPassword('');
                 }}
                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors hover:underline"
             >
