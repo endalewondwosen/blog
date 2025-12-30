@@ -4,6 +4,7 @@ export interface User {
   avatarUrl: string;
   joinedAt: number;
   bookmarks: string[]; // Array of Post IDs
+  bio?: string;
 }
 
 export interface Comment {

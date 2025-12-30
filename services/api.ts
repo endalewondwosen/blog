@@ -67,7 +67,8 @@ const INITIAL_USERS = [
     password: 'password',
     avatarUrl: 'https://picsum.photos/100/100?random=100',
     joinedAt: Date.now() - 100000000,
-    bookmarks: ['2'] // Demo: User has bookmarked the second post
+    bookmarks: ['2'],
+    bio: "Tech enthusiast, avid writer, and coffee lover. I explore the intersection of technology and creativity."
   },
   {
     id: 'alice-doe',
@@ -75,7 +76,8 @@ const INITIAL_USERS = [
     password: 'password',
     avatarUrl: 'https://picsum.photos/100/100?random=101',
     joinedAt: Date.now() - 50000000,
-    bookmarks: []
+    bookmarks: [],
+    bio: "UI/UX Designer with a passion for minimalism and accessible design patterns."
   }
 ];
 
@@ -113,6 +115,42 @@ class ApiClient {
         return res.json();
     } catch {
         return null;
+    }
+  }
+
+  async getUserProfile(id: string): Promise<User | undefined> {
+    if (this.useMock) {
+        await delay(300);
+        let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+        let users = usersStr ? JSON.parse(usersStr) : INITIAL_USERS;
+        const user = users.find((u: any) => u.id === id);
+        
+        if (user) {
+             const { password: _, ...safeUser } = user;
+             // Ensure bio is present for demo consistency if missing in storage
+             if (!safeUser.bio) {
+                 const initial = INITIAL_USERS.find(u => u.id === id);
+                 if (initial) safeUser.bio = initial.bio;
+             }
+             return safeUser;
+        }
+        
+        // Fallback for demo
+        const initial = INITIAL_USERS.find(u => u.id === id);
+        if (initial) {
+            const { password: _, ...safeUser } = initial;
+            return safeUser;
+        }
+
+        return undefined;
+    }
+
+    try {
+        const res = await fetch(`${this.baseUrl}/users/${id}`);
+        if (!res.ok) return undefined;
+        return res.json();
+    } catch {
+        return undefined;
     }
   }
 
@@ -179,7 +217,8 @@ class ApiClient {
             password, // In real app, never store plain text
             avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
             joinedAt: Date.now(),
-            bookmarks: []
+            bookmarks: [],
+            bio: "I'm a new writer here!"
         };
 
         users.push(newUser);

@@ -94,6 +94,17 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+// GET PUBLIC USER PROFILE
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // BOOKMARK POST
 app.post('/api/users/bookmark/:postId', authenticateToken, async (req, res) => {
   try {

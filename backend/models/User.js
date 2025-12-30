@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'https://picsum.photos/100/100'
   },
+  bio: {
+    type: String,
+    default: ''
+  },
   bookmarks: {
     type: [String], // Array of Post IDs
     default: []

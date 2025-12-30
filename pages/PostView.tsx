@@ -30,6 +30,7 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<BlogPost | undefined>(undefined);
+  const [author, setAuthor] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false); // Local session state for demo
@@ -69,6 +70,14 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                     if (currentUser && currentUser.bookmarks) {
                         setIsBookmarked(currentUser.bookmarks.includes(found.id));
                     }
+                }
+
+                // Fetch Author Profile
+                try {
+                    const authorData = await api.getUserProfile(found.authorId);
+                    if (authorData) setAuthor(authorData);
+                } catch (e) {
+                    console.error("Failed to fetch author", e);
                 }
 
                 // Fetch related posts
@@ -494,6 +503,26 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                     </button>
                 </div>
             </div>
+
+            {/* About the Author */}
+            {author && (
+                <div className="mt-12 p-8 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
+                    <div className="flex-shrink-0">
+                        <img 
+                            src={author.avatarUrl} 
+                            alt={author.username} 
+                            className="w-20 h-20 rounded-full border-4 border-white shadow-sm"
+                        />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1 capitalize">{author.username}</h3>
+                        <p className="text-sm font-medium text-indigo-600 mb-3">Author</p>
+                        <p className="text-gray-600 leading-relaxed max-w-2xl">
+                            {author.bio || `Hi there! I'm ${author.username}, a writer on MyBlog sharing my thoughts and experiences.`}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Engagement Section */}
             <CommentSection 
