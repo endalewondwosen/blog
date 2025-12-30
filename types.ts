@@ -3,6 +3,7 @@ export interface User {
   username: string;
   avatarUrl: string;
   joinedAt: number;
+  bookmarks: string[]; // Array of Post IDs
 }
 
 export interface Comment {

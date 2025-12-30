@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe } from 'lucide-react';
+import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe, Share2, Linkedin, Twitter, Link as LinkIcon, Check, Bookmark, BookmarkCheck } from 'lucide-react';
 import { BlogPost, User } from '../types';
 import { api } from '../services/api';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import CommentSection from '../components/CommentSection';
 import AskArticleWidget from '../components/AskArticleWidget';
+import PostCard from '../components/PostCard';
 
 interface PostViewProps {
   user: User | null;
@@ -32,6 +33,11 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false); // Local session state for demo
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   
   // Translation State
   const [currentLanguage, setCurrentLanguage] = useState('en');
@@ -47,11 +53,37 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   useEffect(() => {
     if (id) {
       const fetchPost = async () => {
+        setIsLoading(true);
         try {
             const found = await api.getPostById(id);
             if (found) {
                 setPost(found);
                 setLikes(found.likes || 0);
+                
+                // Check bookmark status
+                if (user) {
+                    const currentUser = await api.getCurrentUser();
+                    if (currentUser && currentUser.bookmarks) {
+                        setIsBookmarked(currentUser.bookmarks.includes(found.id));
+                    }
+                }
+
+                // Fetch related posts
+                const allPosts = await api.getPosts();
+                const related = allPosts
+                    .filter(p => p.id !== found.id)
+                    .sort((a, b) => {
+                        // Sort by tag intersection count
+                        const aTags = a.tags || [];
+                        const bTags = b.tags || [];
+                        const currentTags = found.tags || [];
+                        const aMatch = aTags.filter(t => currentTags.includes(t)).length;
+                        const bMatch = bTags.filter(t => currentTags.includes(t)).length;
+                        return bMatch - aMatch;
+                    })
+                    .slice(0, 3);
+                setRelatedPosts(related);
+
             } else {
                 navigate('/');
             }
@@ -63,8 +95,23 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         }
       };
       fetchPost();
+      
+      // Reset scroll
+      window.scrollTo(0, 0);
     }
-  }, [id, navigate]);
+  }, [id, navigate, user]);
+
+  // Scroll Progress Listener
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop;
+      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = totalScroll / windowHeight;
+      setScrollProgress(Number.isNaN(progress) ? 0 : progress);
+    }
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -80,8 +127,15 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
 
   const handleDelete = async () => {
     if (post && window.confirm("Are you sure you want to delete this post?")) {
-      await api.deletePost(post.id);
-      navigate('/');
+      setIsDeleting(true);
+      try {
+          await api.deletePost(post.id);
+          navigate('/');
+      } catch (e) {
+          console.error("Delete failed", e);
+          setIsDeleting(false);
+          alert("Failed to delete post");
+      }
     }
   };
 
@@ -90,6 +144,38 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
     setLikes(prev => prev + 1);
     setHasLiked(true);
     try { await api.toggleLike(post.id); } catch(e) { console.error(e); }
+  };
+
+  const handleBookmark = async () => {
+      if (!post || !user) {
+          navigate('/login');
+          return;
+      }
+      const prev = isBookmarked;
+      setIsBookmarked(!prev); // Optimistic update
+      try {
+          await api.toggleBookmark(post.id);
+      } catch (e) {
+          console.error(e);
+          setIsBookmarked(prev); // Revert on error
+          alert("Failed to update bookmark");
+      }
+  };
+
+  const handleShare = (platform: string) => {
+    if (!post) return;
+    const url = window.location.href;
+    const text = `Check out "${post.title}" on MyBlog`;
+    
+    if (platform === 'twitter') {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    } else if (platform === 'linkedin') {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+    } else if (platform === 'copy') {
+        navigator.clipboard.writeText(url);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   const handleLanguageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -197,6 +283,15 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-white pb-20">
+      
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 h-1.5 bg-indigo-100 z-[60] w-full">
+         <div 
+            className="h-full bg-indigo-600 transition-all duration-150 ease-out" 
+            style={{ width: `${scrollProgress * 100}%` }}
+         />
+      </div>
+
       {/* Hero Header */}
       <div className="relative h-[60vh] w-full overflow-hidden">
         <div className="absolute inset-0 bg-gray-900/40 z-10" />
@@ -270,9 +365,24 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                             ? 'bg-rose-50 text-rose-600 cursor-default' 
                             : 'bg-gray-50 text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                         }`}
+                        title="Like this post"
                     >
                         <Heart size={20} fill={hasLiked ? "currentColor" : "none"} />
                         <span className="font-semibold">{likes}</span>
+                    </button>
+
+                    {/* Bookmark Button */}
+                    <button
+                        onClick={handleBookmark}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all transform active:scale-95 ${
+                            isBookmarked
+                            ? 'bg-amber-50 text-amber-600' 
+                            : 'bg-gray-50 text-gray-600 hover:bg-amber-50 hover:text-amber-600'
+                        }`}
+                        title={isBookmarked ? "Remove from reading list" : "Save to reading list"}
+                    >
+                        {isBookmarked ? <BookmarkCheck size={20} fill="currentColor" /> : <Bookmark size={20} />}
+                        <span className="font-medium hidden sm:inline">{isBookmarked ? 'Saved' : 'Save'}</span>
                     </button>
 
                      {/* Audio Player Button */}
@@ -326,9 +436,10 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                         </button>
                         <button
                         onClick={handleDelete}
-                        className="flex items-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                        disabled={isDeleting}
+                        className="flex items-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                         >
-                        <Trash2 size={16} />
+                        {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         Delete
                         </button>
                     </div>
@@ -348,6 +459,26 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                  <MarkdownRenderer content={displayContent} />
                )}
             </div>
+            
+            {/* Share Section */}
+            <div className="mt-12 pt-8 border-t border-gray-100">
+                <h4 className="text-gray-900 font-bold mb-4 flex items-center gap-2">
+                    <Share2 size={18} />
+                    Share this article
+                </h4>
+                <div className="flex gap-3">
+                    <button onClick={() => handleShare('twitter')} className="p-3 bg-blue-50 text-blue-500 rounded-full hover:bg-blue-100 transition-colors">
+                        <Twitter size={20} />
+                    </button>
+                    <button onClick={() => handleShare('linkedin')} className="p-3 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors">
+                        <Linkedin size={20} />
+                    </button>
+                    <button onClick={() => handleShare('copy')} className="p-3 bg-gray-50 text-gray-700 rounded-full hover:bg-gray-100 transition-colors relative">
+                        {isCopied ? <Check size={20} className="text-green-600"/> : <LinkIcon size={20} />}
+                        {isCopied && <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded">Copied!</span>}
+                    </button>
+                </div>
+            </div>
 
             {/* Engagement Section */}
             <CommentSection 
@@ -357,6 +488,18 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
             />
         </div>
       </div>
+      
+      {/* Related Posts */}
+      {relatedPosts.length > 0 && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+              <h3 className="text-2xl font-bold text-gray-900 mb-8">Related Articles</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {relatedPosts.map(p => (
+                      <PostCard key={p.id} post={p} />
+                  ))}
+              </div>
+          </div>
+      )}
 
       {/* Floating Ask Widget (Always uses original content context for better accuracy) */}
       <AskArticleWidget articleContent={`${post.title}\n\n${post.content}`} />

@@ -18,7 +18,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/novablog')
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/myblog')
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -53,7 +53,8 @@ app.post('/api/auth/register', async (req, res) => {
     const user = new User({
       username: username.toLowerCase(),
       password: hashedPassword,
-      avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`
+      avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
+      bookmarks: []
     });
     
     await user.save();
@@ -93,10 +94,35 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+// BOOKMARK POST
+app.post('/api/users/bookmark/:postId', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const postId = req.params.postId;
+
+    if (user.bookmarks.includes(postId)) {
+      user.bookmarks = user.bookmarks.filter(id => id !== postId);
+    } else {
+      user.bookmarks.push(postId);
+    }
+    await user.save();
+    res.json({ bookmarks: user.bookmarks });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get All Posts
 app.get('/api/posts', async (req, res) => {
   try {
     const filter = req.query.author ? { authorId: req.query.author } : {};
+    // Handle array of IDs for bookmarks
+    if (req.query.ids) {
+        const ids = req.query.ids.split(',');
+        const posts = await Post.find({ _id: { $in: ids } });
+        return res.json(posts);
+    }
+    
     const posts = await Post.find(filter).sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {

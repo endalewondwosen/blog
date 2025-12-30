@@ -74,7 +74,7 @@ const App: React.FC = () => {
 
         <footer className="bg-white border-t border-gray-100 py-10 mt-auto">
           <div className="max-w-5xl mx-auto px-4 text-center text-gray-500">
-            <p className="mb-2">&copy; {new Date().getFullYear()} NovaBlog. All rights reserved.</p>
+            <p className="mb-2">&copy; {new Date().getFullYear()} MyBlog. All rights reserved.</p>
             <p className="text-sm">MERN Stack • Powered by Gemini</p>
           </div>
         </footer>

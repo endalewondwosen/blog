@@ -13,9 +13,9 @@ import {
 
 // --- MOCK DATABASE (For Preview Environment) ---
 const STORAGE_KEYS = {
-  POSTS: 'novablog_posts',
-  CURRENT_USER: 'novablog_current_user',
-  USERS: 'novablog_users' // Stores { username, password, ...User }
+  POSTS: 'myblog_posts',
+  CURRENT_USER: 'myblog_current_user',
+  USERS: 'myblog_users' // Stores { username, password, ...User }
 };
 
 const INITIAL_POSTS: BlogPost[] = [
@@ -66,14 +66,16 @@ const INITIAL_USERS = [
     username: 'demo-user',
     password: 'password',
     avatarUrl: 'https://picsum.photos/100/100?random=100',
-    joinedAt: Date.now() - 100000000
+    joinedAt: Date.now() - 100000000,
+    bookmarks: ['2'] // Demo: User has bookmarked the second post
   },
   {
     id: 'alice-doe',
     username: 'alice-doe',
     password: 'password',
     avatarUrl: 'https://picsum.photos/100/100?random=101',
-    joinedAt: Date.now() - 50000000
+    joinedAt: Date.now() - 50000000,
+    bookmarks: []
   }
 ];
 
@@ -176,7 +178,8 @@ class ApiClient {
             username,
             password, // In real app, never store plain text
             avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
-            joinedAt: Date.now()
+            joinedAt: Date.now(),
+            bookmarks: []
         };
 
         users.push(newUser);
@@ -212,6 +215,48 @@ class ApiClient {
     localStorage.removeItem('token');
   }
 
+  async toggleBookmark(postId: string): Promise<string[]> {
+    if (this.useMock) {
+        await delay(300);
+        const currentUserStr = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+        if (!currentUserStr) throw new Error("Not authenticated");
+        
+        const user = JSON.parse(currentUserStr);
+        const bookmarks = user.bookmarks || [];
+        
+        let newBookmarks;
+        if (bookmarks.includes(postId)) {
+            newBookmarks = bookmarks.filter((id: string) => id !== postId);
+        } else {
+            newBookmarks = [...bookmarks, postId];
+        }
+        
+        user.bookmarks = newBookmarks;
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        
+        // Also update the main users list to persist across logins
+        const usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+        if (usersStr) {
+            const users = JSON.parse(usersStr);
+            const index = users.findIndex((u: any) => u.id === user.id);
+            if (index !== -1) {
+                users[index].bookmarks = newBookmarks;
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+            }
+        }
+        
+        return newBookmarks;
+    }
+
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${this.baseUrl}/users/bookmark/${postId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data.bookmarks;
+  }
+
   // --- POSTS ---
 
   async getPosts(): Promise<BlogPost[]> {
@@ -236,6 +281,16 @@ class ApiClient {
         return posts.filter(p => p.authorId === userId);
     }
     const res = await fetch(`${this.baseUrl}/posts?author=${userId}`);
+    return res.json();
+  }
+
+  async getBookmarkedPosts(bookmarkIds: string[]): Promise<BlogPost[]> {
+    if (this.useMock) {
+        await delay(400);
+        const posts = await this.getPosts();
+        return posts.filter(p => bookmarkIds.includes(p.id));
+    }
+    const res = await fetch(`${this.baseUrl}/posts?ids=${bookmarkIds.join(',')}`);
     return res.json();
   }
 
@@ -307,9 +362,11 @@ class ApiClient {
 
   async deletePost(id: string): Promise<void> {
     if (this.useMock) {
-      await delay(500);
-      const posts = await this.getPosts();
-      const filtered = posts.filter(p => p.id !== id);
+      await delay(300); // Reduced delay for better UX
+      // Access storage directly to avoid chaining delays
+      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+      const posts = stored ? JSON.parse(stored) : INITIAL_POSTS;
+      const filtered = posts.filter((p: BlogPost) => p.id !== id);
       localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(filtered));
       return;
     }

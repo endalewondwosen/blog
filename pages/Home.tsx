@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Sparkles, Loader2, Search } from 'lucide-react';
+import { Sparkles, Loader2, Search, TrendingUp, Mail } from 'lucide-react';
 import { BlogPost } from '../types';
 import { api } from '../services/api';
 import PostCard from '../components/PostCard';
@@ -8,6 +8,8 @@ const Home: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -32,6 +34,29 @@ const Home: React.FC = () => {
     );
   }, [posts, searchQuery]);
 
+  // Extract popular tags
+  const popularTags = useMemo(() => {
+      const tagCounts: Record<string, number> = {};
+      posts.forEach(post => {
+          post.tags?.forEach(tag => {
+              tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          });
+      });
+      return Object.entries(tagCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 6)
+          .map(([tag]) => tag);
+  }, [posts]);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+      e.preventDefault();
+      if(email) {
+          setSubscribed(true);
+          setEmail('');
+          setTimeout(() => setSubscribed(false), 3000);
+      }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -50,7 +75,7 @@ const Home: React.FC = () => {
           </p>
 
           {/* Search Bar */}
-          <div className="max-w-xl mx-auto relative group">
+          <div className="max-w-xl mx-auto relative group mb-8">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
                 <Search size={20} />
             </div>
@@ -62,6 +87,31 @@ const Home: React.FC = () => {
                 className="w-full pl-11 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-lg outline-none transition-all"
             />
           </div>
+
+          {/* Trending Topics */}
+          {!isLoading && popularTags.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 items-center">
+                  <span className="text-sm font-semibold text-gray-500 flex items-center gap-1 mr-2">
+                      <TrendingUp size={14} /> Trending:
+                  </span>
+                  {popularTags.map(tag => (
+                      <button 
+                        key={tag}
+                        onClick={() => setSearchQuery(tag)}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                            searchQuery === tag 
+                            ? 'bg-indigo-600 text-white' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                          {tag}
+                      </button>
+                  ))}
+                  {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="text-sm text-red-500 hover:underline ml-2">Clear</button>
+                  )}
+              </div>
+          )}
         </div>
       </div>
 
@@ -90,6 +140,34 @@ const Home: React.FC = () => {
             <p className="text-gray-500 mt-2">Try adjusting your search terms</p>
           </div>
         )}
+      </div>
+
+      {/* Newsletter Section */}
+      <div className="bg-indigo-900 py-16 text-white">
+          <div className="max-w-3xl mx-auto px-4 text-center">
+              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                  <Mail size={32} />
+              </div>
+              <h2 className="text-3xl font-bold mb-4">Stay in the loop</h2>
+              <p className="text-indigo-200 mb-8 max-w-lg mx-auto">Get the latest articles, tutorials, and insights delivered straight to your inbox. No spam, we promise.</p>
+              
+              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                  <input 
+                    type="email" 
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-grow px-5 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    required
+                  />
+                  <button 
+                    type="submit" 
+                    className="px-6 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
+                  >
+                      {subscribed ? 'Subscribed!' : 'Subscribe'}
+                  </button>
+              </form>
+          </div>
       </div>
     </div>
   );

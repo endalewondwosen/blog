@@ -19,9 +19,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-indigo-700 transition-colors">
-              N
+              M
             </div>
-            <span className="font-bold text-xl text-gray-900 tracking-tight">NovaBlog</span>
+            <span className="font-bold text-xl text-gray-900 tracking-tight">MyBlog</span>
           </Link>
 
           <div className="flex items-center gap-4">
