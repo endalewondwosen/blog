@@ -6,7 +6,6 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Polyfill process.env for the frontend code
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
     }
   };
