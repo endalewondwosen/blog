@@ -8,6 +8,7 @@ import CommentSection from '../components/CommentSection';
 import AskArticleWidget from '../components/AskArticleWidget';
 import PostCard from '../components/PostCard';
 import SEO from '../components/SEO';
+import { useToast } from '../context/ToastContext';
 
 interface PostViewProps {
   user: User | null;
@@ -30,6 +31,8 @@ const LANGUAGES = [
 const PostView: React.FC<PostViewProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  
   const [post, setPost] = useState<BlogPost | undefined>(undefined);
   const [author, setAuthor] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,11 +146,12 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
       setIsDeleting(true);
       try {
           await api.deletePost(post.id);
+          showToast("Post deleted successfully", 'success');
           navigate('/');
       } catch (e) {
           console.error("Delete failed", e);
           setIsDeleting(false);
-          alert("Failed to delete post");
+          showToast("Failed to delete post", 'error');
       }
     }
   };
@@ -161,17 +165,20 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
 
   const handleBookmark = async () => {
       if (!post || !user) {
+          showToast("Please sign in to save articles", 'info');
           navigate('/login');
           return;
       }
       const prev = isBookmarked;
       setIsBookmarked(!prev); // Optimistic update
+      
       try {
           await api.toggleBookmark(post.id);
+          showToast(!prev ? "Article saved to reading list" : "Article removed from reading list", 'success');
       } catch (e) {
           console.error(e);
           setIsBookmarked(prev); // Revert on error
-          alert("Failed to update bookmark");
+          showToast("Failed to update bookmark", 'error');
       }
   };
 
@@ -188,6 +195,7 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         navigator.clipboard.writeText(url);
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
+        showToast("Link copied to clipboard!", 'success');
     }
   };
 
@@ -212,9 +220,10 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
       const result = await api.translatePost(post.title, post.content, LANGUAGES.find(l => l.code === lang)?.label || lang);
       setTranslations(prev => ({ ...prev, [lang]: result }));
       setCurrentLanguage(lang);
+      showToast(`Translated to ${LANGUAGES.find(l => l.code === lang)?.label}`, 'success');
     } catch (error) {
       console.error("Translation failed", error);
-      alert("Failed to translate content.");
+      showToast("Failed to translate content.", 'error');
       setCurrentLanguage('en'); // Revert on failure
     } finally {
       setIsTranslating(false);
@@ -233,18 +242,14 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
     setIsAudioLoading(true);
 
     try {
-        // Use current displayed content for audio if possible, but for now we stick to original English to keep voice consistent
-        // Or strictly stick to original post text to save tokens/complexity.
         const textToRead = `${post.title}. ${post.excerpt}. ${post.content}`.substring(0, 1000); 
         const base64Audio = await api.generateAudio(textToRead);
 
         if (!base64Audio) throw new Error("No audio returned");
 
-        // 2. Setup Audio Context
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({sampleRate: 24000});
         setAudioContext(ctx);
 
-        // 3. Decode
         const binaryString = atob(base64Audio);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -252,7 +257,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
             bytes[i] = binaryString.charCodeAt(i);
         }
 
-        // Convert PCM to AudioBuffer
         const dataInt16 = new Int16Array(bytes.buffer);
         const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
         const channelData = buffer.getChannelData(0);
@@ -260,7 +264,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
              channelData[i] = dataInt16[i] / 32768.0;
         }
 
-        // 4. Play
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(ctx.destination);
@@ -272,7 +275,7 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
 
     } catch (error) {
         console.error("Audio playback failed", error);
-        alert("Failed to play audio.");
+        showToast("Failed to play audio.", 'error');
     } finally {
         setIsAudioLoading(false);
     }
@@ -301,15 +304,15 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
   if (!post) return null;
 
   const isAuthor = user && user.id === post.authorId;
+  const isAdmin = user && user.role === 'admin';
+  const canEdit = isAuthor || isAdmin;
 
-  // Determine content to display
   const displayTitle = currentLanguage === 'en' ? post.title : translations[currentLanguage]?.title || post.title;
   const displayContent = currentLanguage === 'en' ? post.content : translations[currentLanguage]?.content || post.content;
 
   return (
     <div className="min-h-screen bg-white pb-20">
       
-      {/* Dynamic SEO Tags */}
       <SEO 
         title={post.title} 
         description={post.excerpt} 
@@ -339,7 +342,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                     <ArrowLeft size={20} className="mr-2" /> Back to Home
                 </Link>
                 
-                {/* Title (Animated for translation switch) */}
                 {isTranslating ? (
                   <div className="h-16 w-3/4 bg-white/20 animate-pulse rounded-lg mb-6"></div>
                 ) : (
@@ -382,14 +384,12 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-30">
         <div className="bg-white rounded-t-3xl p-8 md:p-12 shadow-sm min-h-[200px]">
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-gray-100 pb-6">
                 
                 <div className="flex flex-wrap items-center gap-3">
-                     {/* Like Button */}
                     <button 
                         onClick={handleLike}
                         disabled={hasLiked}
@@ -404,7 +404,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                         <span className="font-semibold">{likes}</span>
                     </button>
 
-                    {/* Bookmark Button */}
                     <button
                         onClick={handleBookmark}
                         className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all transform active:scale-95 ${
@@ -418,7 +417,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                         <span className="font-medium hidden sm:inline">{isBookmarked ? 'Saved' : 'Save'}</span>
                     </button>
 
-                     {/* Audio Player Button */}
                     <button
                         onClick={handlePlayAudio}
                         disabled={isAudioLoading}
@@ -440,7 +438,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                         </span>
                     </button>
 
-                    {/* Language Selector */}
                     <div className="relative flex items-center bg-gray-50 rounded-full border border-gray-200 px-3 py-2 hover:border-indigo-300 transition-colors">
                        {isTranslating ? <Loader2 size={18} className="animate-spin text-indigo-600 mr-2" /> : <Globe size={18} className="text-gray-500 mr-2" />}
                        <select 
@@ -457,16 +454,18 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                     </div>
                 </div>
 
-                {/* Author Tools */}
-                {isAuthor && (
+                {/* Author/Admin Tools */}
+                {canEdit && (
                     <div className="flex gap-3">
-                        <button
-                        onClick={() => navigate(`/edit/${post.id}`)}
-                        className="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors text-sm font-medium"
-                        >
-                        <Edit2 size={16} />
-                        Edit
-                        </button>
+                        {isAuthor && (
+                            <button
+                            onClick={() => navigate(`/edit/${post.id}`)}
+                            className="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors text-sm font-medium"
+                            >
+                            <Edit2 size={16} />
+                            Edit
+                            </button>
+                        )}
                         <button
                         onClick={handleDelete}
                         disabled={isDeleting}
@@ -493,7 +492,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                )}
             </div>
             
-            {/* Share Section */}
             <div className="mt-12 pt-8 border-t border-gray-100">
                 <h4 className="text-gray-900 font-bold mb-4 flex items-center gap-2">
                     <Share2 size={18} />
@@ -513,7 +511,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                 </div>
             </div>
 
-            {/* About the Author */}
             {author && (
                 <div className="mt-12 p-8 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
                     <div className="flex-shrink-0">
@@ -533,7 +530,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                 </div>
             )}
 
-            {/* Engagement Section */}
             <CommentSection 
                 postId={post.id} 
                 initialComments={post.comments || []} 
@@ -542,7 +538,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
         </div>
       </div>
       
-      {/* Related Posts Carousel */}
       {relatedPosts.length > 0 && (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 mb-20">
               <div className="flex items-center justify-between mb-6">
@@ -578,7 +573,6 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
           </div>
       )}
 
-      {/* Floating Ask Widget (Always uses original content context for better accuracy) */}
       <AskArticleWidget articleContent={`${post.title}\n\n${post.content}`} />
     </div>
   );

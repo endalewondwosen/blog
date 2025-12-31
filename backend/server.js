@@ -55,7 +55,6 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-// Only connect if MONGO_URI is explicitly provided, otherwise warn (since frontend uses Mock by default)
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Connected'))
@@ -80,6 +79,15 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Admin Middleware
+const requireAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+};
+
 // --- Routes ---
 
 // REGISTER
@@ -92,17 +100,20 @@ app.post('/api/auth/register', async (req, res) => {
     if (existingUser) return res.status(400).json({ message: 'Username already taken' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // First user is automatically admin (simple logic for dev)
+    const count = await User.countDocuments();
+    
     const user = new User({
       username: username.toLowerCase(),
       password: hashedPassword,
       avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
       bookmarks: [],
-      role: 'user' // Default role
+      role: count === 0 ? 'admin' : 'user'
     });
     
     await user.save();
     
-    // Include role in token
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
     res.status(201).json({ user, token });
   } catch (err) {
@@ -120,7 +131,6 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Include role in token
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
     res.json({ user, token });
   } catch (err) {
@@ -168,11 +178,12 @@ app.post('/api/users/bookmark/:postId', authenticateToken, async (req, res) => {
   }
 });
 
+// --- POST ROUTES ---
+
 // Get All Posts
 app.get('/api/posts', async (req, res) => {
   try {
     const filter = req.query.author ? { authorId: req.query.author } : {};
-    // Handle array of IDs for bookmarks
     if (req.query.ids) {
         const ids = req.query.ids.split(',');
         const posts = await Post.find({ _id: { $in: ids } });
@@ -200,7 +211,7 @@ app.get('/api/posts/:id', async (req, res) => {
 // Create Post
 app.post('/api/posts', authenticateToken, async (req, res) => {
   try {
-    const newPost = new Post({ ...req.body, authorId: req.user.id }); // Enforce author ID from token
+    const newPost = new Post({ ...req.body, authorId: req.user.id });
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
   } catch (err) {
@@ -208,10 +219,17 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
   }
 });
 
-// Update Post
+// Update Post (RBAC Protected)
 app.put('/api/posts/:id', authenticateToken, async (req, res) => {
   try {
-    // In production, ensure only author can update
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Allow if Owner OR Admin
+    if (post.authorId.toString() !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Not authorized to edit this post' });
+    }
+
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedPost);
   } catch (err) {
@@ -219,10 +237,17 @@ app.put('/api/posts/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete Post
+// Delete Post (RBAC Protected)
 app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   try {
-    // In production, ensure only author can delete
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Allow if Owner OR Admin
+    if (post.authorId.toString() !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Not authorized to delete this post' });
+    }
+
     await Post.findByIdAndDelete(req.params.id);
     res.json({ message: 'Post deleted' });
   } catch (err) {
@@ -230,14 +255,53 @@ app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// AI Generation Endpoint
+// --- ADMIN ROUTES ---
+
+// Get Platform Stats
+app.get('/api/admin/stats', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalPosts = await Post.countDocuments();
+        
+        // Calculate total likes
+        const posts = await Post.find({}, 'likes');
+        const totalLikes = posts.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+
+        res.json({ totalUsers, totalPosts, totalLikes });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Get All Users (Admin)
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const users = await User.find({}, '-password'); // Exclude passwords
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Delete User (Admin)
+app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        // Also delete user's posts
+        await Post.deleteMany({ authorId: req.params.id });
+        res.json({ message: 'User and their posts deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// --- AI Endpoints (Unchanged) ---
 app.post('/api/ai/generate', async (req, res) => {
   try {
     const { topic, type, title, context, targetLanguage } = req.body;
     let prompt = '';
     let responseMimeType = 'text/plain';
     
-    // Config for different AI tasks
     if (type === 'summary') {
       prompt = `Summarize the following blog post content into a short excerpt (maximum 2 sentences):\n\n${topic.substring(0, 1000)}...`;
     } else if (type === 'tags') {
@@ -255,7 +319,6 @@ app.post('/api/ai/generate', async (req, res) => {
       prompt = `Translate the following blog post title and content into ${targetLanguage}. Ensure you preserve all Markdown formatting (bold, italics, headers, code blocks, lists) exactly as they are in the original. The tone should remain professional and consistent with the original text. Return ONLY a JSON object with the following structure: { "title": "Translated Title", "content": "Translated Markdown Content" }. Original Title: ${title}. Original Content:\n${topic.substring(0, 5000)}`;
       responseMimeType = 'application/json';
     } else if (type === 'image') {
-       // Image Generation
        const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
           contents: {
@@ -277,7 +340,6 @@ app.post('/api/ai/generate', async (req, res) => {
        return res.json({ image: imageBase64 });
 
     } else if (type === 'audio') {
-        // TTS
         const cleanText = topic.substring(0, 600).replace(/[#*`]/g, ''); 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogIn, ArrowRight, Loader2, UserPlus, Lock, User, Info } from 'lucide-react';
 import { api } from '../services/api';
 import { User as UserType } from '../types';
+import { useToast } from '../context/ToastContext';
 
 interface LoginProps {
   onLoginSuccess: (user: UserType) => void;
@@ -13,7 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,20 +22,21 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (!username.trim() || !password.trim()) return;
 
     setIsLoading(true);
-    setError('');
     
     try {
         let user;
         if (isRegistering) {
             user = await api.register(username, password);
+            showToast(`Welcome, ${user.username}! Account created.`, 'success');
         } else {
             user = await api.login(username, password);
+            showToast(`Welcome back, ${user.username}!`, 'success');
         }
         onLoginSuccess(user);
         navigate('/');
     } catch (err: any) {
         console.error("Auth failed", err);
-        setError(err.message || "Authentication failed. Please try again.");
+        showToast(err.message || "Authentication failed. Please try again.", 'error');
     } finally {
         setIsLoading(false);
     }
@@ -61,8 +63,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <Info className="flex-shrink-0 mt-0.5" size={18} />
             <div>
               <p className="font-semibold mb-1">Demo Credentials:</p>
-              <p>Username: <span className="font-mono bg-blue-100 px-1 rounded">demo-user</span></p>
-              <p>Password: <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
+              <div className="space-y-1">
+                <p>User: <span className="font-mono bg-blue-100 px-1 rounded">demo-user</span> / <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
+                <p>Admin: <span className="font-mono bg-blue-100 px-1 rounded">admin</span> / <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
+              </div>
             </div>
           </div>
         )}
@@ -107,12 +111,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center justify-center animate-pulse">
-                  {error}
-              </div>
-          )}
-
           <button
             type="submit"
             disabled={!username.trim() || !password.trim() || isLoading}
@@ -127,8 +125,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <button
                 onClick={() => {
                     setIsRegistering(!isRegistering);
-                    setError('');
-                    // Clear inputs when switching modes for better UX
                     setUsername('');
                     setPassword('');
                 }}

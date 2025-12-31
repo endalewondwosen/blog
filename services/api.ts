@@ -72,6 +72,16 @@ const INITIAL_USERS = [
     role: 'user' as const
   },
   {
+    id: 'admin',
+    username: 'admin',
+    password: 'password',
+    avatarUrl: 'https://picsum.photos/100/100?random=999',
+    joinedAt: Date.now() - 200000000,
+    bookmarks: [],
+    bio: "Platform Administrator.",
+    role: 'admin' as const
+  },
+  {
     id: 'alice-doe',
     username: 'alice-doe',
     password: 'password',
@@ -103,9 +113,16 @@ class ApiClient {
     if (this.useMock) {
       await delay(300);
       const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      
+      const user = JSON.parse(stored);
+      // Migration: Ensure role exists for legacy data
+      if (!user.role) {
+          user.role = 'user';
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      }
+      return user;
     }
-    // Real implementation would hit a /me endpoint and verify JWT
     const token = localStorage.getItem('token');
     if (!token) return null;
     
@@ -129,15 +146,14 @@ class ApiClient {
         
         if (user) {
              const { password: _, ...safeUser } = user;
-             // Ensure bio is present for demo consistency if missing in storage
              if (!safeUser.bio) {
                  const initial = INITIAL_USERS.find(u => u.id === id);
                  if (initial) safeUser.bio = initial.bio;
              }
+             if (!safeUser.role) safeUser.role = 'user';
              return safeUser;
         }
         
-        // Fallback for demo
         const initial = INITIAL_USERS.find(u => u.id === id);
         if (initial) {
             const { password: _, ...safeUser } = initial;
@@ -163,7 +179,6 @@ class ApiClient {
       let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
       let users = usersStr ? JSON.parse(usersStr) : [];
 
-      // SEEDING: If no users exist, seed the defaults so "demo-user" works immediately
       if (users.length === 0) {
         users = INITIAL_USERS;
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
@@ -175,7 +190,6 @@ class ApiClient {
           throw new Error("Invalid credentials");
       }
 
-      // Return user without password
       const { password: _, ...safeUser } = user;
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(safeUser));
       return safeUser;
@@ -204,7 +218,6 @@ class ApiClient {
         let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
         let users = usersStr ? JSON.parse(usersStr) : [];
         
-        // Seed if empty (consistency)
         if (users.length === 0) {
             users = INITIAL_USERS;
         }
@@ -213,16 +226,17 @@ class ApiClient {
             throw new Error("Username already taken");
         }
 
+        const count = users.length;
         const newUser = {
             id: `user-${Date.now()}`,
             username,
-            password, // In real app, never store plain text
+            password,
             avatarUrl: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 1000)}`,
             joinedAt: Date.now(),
             bookmarks: [],
             bio: "I'm a new writer here!",
-            role: 'user' as const
-        };
+            role: count === 0 ? 'admin' : 'user' // Simple logic: first user is admin
+        } as any;
 
         users.push(newUser);
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
@@ -276,7 +290,6 @@ class ApiClient {
         user.bookmarks = newBookmarks;
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
         
-        // Also update the main users list to persist across logins
         const usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
         if (usersStr) {
             const users = JSON.parse(usersStr);
@@ -399,13 +412,14 @@ class ApiClient {
       },
       body: JSON.stringify(post)
     });
+    
+    if (!res.ok) throw new Error('Failed to update post');
     return res.json();
   }
 
   async deletePost(id: string): Promise<void> {
     if (this.useMock) {
-      await delay(300); // Reduced delay for better UX
-      // Access storage directly to avoid chaining delays
+      await delay(300);
       const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
       const posts = stored ? JSON.parse(stored) : INITIAL_POSTS;
       const filtered = posts.filter((p: BlogPost) => p.id !== id);
@@ -418,6 +432,71 @@ class ApiClient {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
     });
+  }
+
+  // --- ADMIN SERVICES ---
+
+  async getAdminStats(): Promise<{ totalUsers: number; totalPosts: number; totalLikes: number }> {
+    if (this.useMock) {
+        await delay(300);
+        const posts = await this.getPosts();
+        
+        let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+        let users = usersStr ? JSON.parse(usersStr) : INITIAL_USERS;
+
+        const totalLikes = posts.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+        return {
+            totalUsers: users.length,
+            totalPosts: posts.length,
+            totalLikes
+        };
+    }
+    
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${this.baseUrl}/admin/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.json();
+  }
+
+  async getAllUsers(): Promise<User[]> {
+      if (this.useMock) {
+          await delay(300);
+          let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+          let users = usersStr ? JSON.parse(usersStr) : INITIAL_USERS;
+          return users.map(({ password, ...user }: any) => {
+              if(!user.role) user.role = 'user';
+              return user;
+          });
+      }
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${this.baseUrl}/admin/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return res.json();
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+      if (this.useMock) {
+          await delay(400);
+          let usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+          let users = usersStr ? JSON.parse(usersStr) : INITIAL_USERS;
+          const filteredUsers = users.filter((u: any) => u.id !== userId);
+          localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(filteredUsers));
+
+          // Also delete their posts
+          const posts = await this.getPosts();
+          const filteredPosts = posts.filter(p => p.authorId !== userId);
+          localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(filteredPosts));
+          return;
+      }
+
+      const token = localStorage.getItem('token');
+      await fetch(`${this.baseUrl}/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
   }
 
   // --- INTERACTIONS ---
@@ -592,5 +671,4 @@ class ApiClient {
 }
 
 // Export a singleton instance
-// NOTE: Set true for Preview environment (Mock Mode), set false for Real MERN Backend
 export const api = new ApiClient(true);
