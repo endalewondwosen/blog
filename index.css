@@ -1,14 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-slate-50 text-gray-900 font-sans;
-  }
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc; /* bg-slate-50 */
+  color: #111827; /* text-gray-900 */
 }
 
-/* Custom scrollbar for better aesthetics */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
