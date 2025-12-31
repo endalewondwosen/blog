@@ -57,16 +57,36 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </p>
         </div>
 
-        {/* Demo Credentials Hint */}
+        {/* Demo Credentials Buttons */}
         {!isRegistering && (
-          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 text-sm text-blue-800">
-            <Info className="flex-shrink-0 mt-0.5" size={18} />
-            <div>
-              <p className="font-semibold mb-1">Demo Credentials:</p>
-              <div className="space-y-1">
-                <p>User: <span className="font-mono bg-blue-100 px-1 rounded">demo-user</span> / <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
-                <p>Admin: <span className="font-mono bg-blue-100 px-1 rounded">admin</span> / <span className="font-mono bg-blue-100 px-1 rounded">password</span></p>
-              </div>
+          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div className="flex gap-2 items-center text-blue-800 mb-3">
+               <Info size={18} />
+               <p className="font-semibold text-sm">Quick Login (Portfolio Demo):</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                   setUsername('demo-user');
+                   setPassword('password');
+                   // Small timeout to allow state update before potential auto-submit if desired
+                   // For now just filling is enough
+                }}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-blue-200 rounded shadow-sm text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                <User size={16} /> Demo User
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                   setUsername('admin');
+                   setPassword('password');
+                }}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-blue-200 rounded shadow-sm text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                <Lock size={16} /> Admin User
+              </button>
             </div>
           </div>
         )}

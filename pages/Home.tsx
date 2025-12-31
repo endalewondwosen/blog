@@ -82,14 +82,14 @@ const Home: React.FC = () => {
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-16 lg:py-24">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-sm font-medium mb-6 shadow-sm">
             <Sparkles size={14} className="fill-indigo-100" />
-            <span>AI-Powered MERN Blog</span>
+            <span>Senior Frontend Engineering Portfolio</span>
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight mb-6">
-            Stories that <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">inspire</span> ideas.
+            Engineering the <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Future of UI</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-10">
-            Discover thoughts, tutorials, and insights from our community. 
-            Enhanced by Gemini AI for reading, writing, and translation.
+            Deep dives into React, Performance, Accessibility, and AI-Driven Development. 
+            Built with the MERN Stack.
           </p>
 
           {/* Search Bar */}
@@ -99,6 +99,7 @@ const Home: React.FC = () => {
             </div>
             <input 
                 type="text" 
+                aria-label="Search articles"
                 placeholder="Search articles..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -242,6 +243,7 @@ const Home: React.FC = () => {
               <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
                   <input 
                     type="email" 
+                    aria-label="Email address for newsletter"
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

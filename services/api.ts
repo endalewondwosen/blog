@@ -21,6 +21,69 @@ const STORAGE_KEYS = {
 
 const INITIAL_POSTS: BlogPost[] = [
   {
+    id: '3',
+    title: 'Mastering React Performance: From Lazy Loading to Memoization',
+    content: "Performance is not a luxury; it's a feature. In the world of Single Page Applications (SPAs), bundle size and render cycles are the enemies of user retention.\n\n### The Cost of a Tweet\n\nEvery kilobyte of JavaScript we ship essentially costs the user battery life and data. As Senior Engineers, our job is to ensure we are only shipping what is necessary.\n\n### Strategies for 2024\n\n1.  **Code Splitting**: Using `React.lazy` and `Suspense` to split routes (as implemented in this project's `App.tsx`).\n2.  **Memoization**: Using `useMemo` and `useCallback` to prevent expensive recalculations, but only when profiling confirms a bottleneck.\n3.  **Virtualization**: Rendering massive lists efficiently by only drawing the visible window.\n\n> \"Premature optimization is the root of all evil, but missed optimization is the root of churn.\"",
+    excerpt: "Performance is not a luxury; it's a feature. Learn how to optimize SPAs for maximum speed and retention...",
+    coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
+    tags: ['React', 'Performance', 'Engineering'],
+    likes: 342,
+    comments: [
+        {
+            id: 'c_perf_1',
+            text: "Great breakdown! Regarding `useMemo`, do you have a heuristic for when the calculation is 'expensive' enough to warrant it? I've heard it can sometimes add more overhead than it saves.",
+            authorId: 'demo-user',
+            authorName: 'Demo User',
+            authorAvatar: 'https://picsum.photos/100/100?random=100',
+            createdAt: Date.now() - 3600000
+        }
+    ],
+    authorId: 'admin',
+    authorName: 'Admin',
+    authorAvatar: 'https://picsum.photos/100/100?random=999',
+    createdAt: Date.now(),
+    readTimeMinutes: 5,
+  },
+  {
+    id: '4',
+    title: 'Accessibility First: Engineering for Inclusion',
+    content: "The web was designed to be universal. When we build barriers—accidental or otherwise—we fail that fundamental promise. Accessibility (A11y) is not a 'nice to have' checklist for the end of the sprint; it is a core architectural requirement.\n\n### Beyond `aria-label`\n\nWhile adding labels to inputs (like we did for our Search and Newsletter components) is a great first step, true A11y involves:\n\n-   **Semantic HTML**: Using `<nav>`, `<main>`, and `<article>` so screen readers can navigate the tree.\n-   **Focus Management**: Ensuring keyboard users can navigate modals and dropdowns without getting trapped.\n-   **Color Contrast**: strict adherence to WCAG AA standards.\n\nInclusive design leads to better UX for everyone, not just those with disabilities.",
+    excerpt: "The web was designed to be universal. Learn why A11y is a core architectural requirement, not an afterthought...",
+    coverUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=800',
+    tags: ['A11y', 'Design', 'Inclusion'],
+    likes: 215,
+    comments: [],
+    authorId: 'admin',
+    authorName: 'Admin',
+    authorAvatar: 'https://picsum.photos/100/100?random=999',
+    createdAt: Date.now() - 3600000,
+    readTimeMinutes: 4,
+  },
+  {
+    id: '5',
+    title: 'The Clean Architecture: Scaling Frontend Codebases',
+    content: "As frontend applications grow, they often turn into a 'Component Soup'—logic tightly coupled with UI, making testing impossible and refactoring a nightmare.\n\n### The Service Layer Pattern\n\nIn this project, we utilize a strictly typed `Service Layer` (`api.ts`). This decouples our React components from the data source. \n\n-   **UI Layer**: React Components (Focus on *display*).\n-   **Service Layer**: API Calls, Mock Logic, Transformations (Focus on *data*).\n\nThis separation allow us to switch between a 'Mock Mode' (for demos) and a 'Real Backend' with zero changes to the UI components. This is the hallmark of a resilient architecture.",
+    excerpt: "Stop building 'Component Soup'. Learn how to scale your frontend with the Service Layer pattern...",
+    coverUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=800',
+    tags: ['Architecture', 'System Design', 'Patterns'],
+    likes: 189,
+    comments: [
+        {
+            id: 'c_arch_1',
+            text: "This abstraction layer saved my life on my last project. Being able to mock the entire API for tests without MSW or complex setups is a game changer.",
+            authorId: 'alice-doe',
+            authorName: 'Alice Doe',
+            authorAvatar: 'https://picsum.photos/100/100?random=101',
+            createdAt: Date.now() - 7000000
+        }
+    ],
+    authorId: 'admin',
+    authorName: 'Admin',
+    authorAvatar: 'https://picsum.photos/100/100?random=999',
+    createdAt: Date.now() - 7200000,
+    readTimeMinutes: 6,
+  },
+  {
     id: '1',
     title: 'The Future of AI in Web Development',
     content: "Artificial Intelligence is rapidly transforming how we build and interact with the web. From intelligent code completion tools like GitHub Copilot to sophisticated generative models that can draft entire layouts, the landscape is shifting. \n\n### The Shift to Intent-Based Coding\n\nDevelopers are no longer just writers of syntax; they are becoming **architects of intent**. We can now describe what we want, and AI helps bridge the gap to implementation. However, this doesn't replace the need for deep understanding. It elevates it. We must understand the principles of design, accessibility, and performance even more deeply to guide these powerful tools effectively.\n\n> \"Creativity and problem-solving skills are more valuable than rote memorization of API methods.\"\n\nThe future is bright, collaborative, and incredibly fast-paced.",
@@ -32,9 +95,9 @@ const INITIAL_POSTS: BlogPost[] = [
         {
             id: 'c1',
             text: "This is a great perspective! I completely agree about the 'architects of intent' concept.",
-            authorId: 'reader1',
-            authorName: 'Sarah Jenkins',
-            authorAvatar: 'https://picsum.photos/100/100?random=201',
+            authorId: 'alice-doe',
+            authorName: 'Alice Doe',
+            authorAvatar: 'https://picsum.photos/100/100?random=101',
             createdAt: Date.now() - 86400000
         }
     ],

@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Editor from './pages/Editor';
-import PostView from './pages/PostView';
-import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
 import { User } from './types';
 import { api } from './services/api';
 import { ToastProvider } from './context/ToastContext';
+
+// Lazy Load Pages for Performance (Code Splitting)
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Editor = lazy(() => import('./pages/Editor'));
+const PostView = lazy(() => import('./pages/PostView'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -55,30 +57,38 @@ const App: React.FC = () => {
             <Navbar user={user} onLogout={handleLogout} />
             
             <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route 
-                  path="/login" 
-                  element={!user ? <Login onLoginSuccess={handleLogin} /> : <Navigate to="/" />} 
-                />
-                <Route 
-                  path="/create" 
-                  element={user ? <Editor user={user} /> : <Navigate to="/login" />} 
-                />
-                <Route 
-                  path="/edit/:id" 
-                  element={user ? <Editor user={user} /> : <Navigate to="/login" />} 
-                />
-                <Route 
-                  path="/profile" 
-                  element={user ? <Profile user={user} /> : <Navigate to="/login" />} 
-                />
-                <Route 
-                  path="/admin" 
-                  element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} 
-                />
-                <Route path="/post/:id" element={<PostView user={user} />} />
-              </Routes>
+              <Suspense 
+                fallback={
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                }
+              >
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route 
+                    path="/login" 
+                    element={!user ? <Login onLoginSuccess={handleLogin} /> : <Navigate to="/" />} 
+                  />
+                  <Route 
+                    path="/create" 
+                    element={user ? <Editor user={user} /> : <Navigate to="/login" />} 
+                  />
+                  <Route 
+                    path="/edit/:id" 
+                    element={user ? <Editor user={user} /> : <Navigate to="/login" />} 
+                  />
+                  <Route 
+                    path="/profile" 
+                    element={user ? <Profile user={user} /> : <Navigate to="/login" />} 
+                  />
+                  <Route 
+                    path="/admin" 
+                    element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} 
+                  />
+                  <Route path="/post/:id" element={<PostView user={user} />} />
+                </Routes>
+              </Suspense>
             </main>
 
             <footer className="bg-white border-t border-gray-100 py-10 mt-auto">
