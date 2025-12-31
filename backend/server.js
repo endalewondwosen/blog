@@ -1,13 +1,13 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { GoogleGenAI } = require('@google/genai');
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { GoogleGenAI } from '@google/genai';
 
-const User = require('./models/User');
-const Post = require('./models/Post');
+import User from './models/User.js';
+import Post from './models/Post.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,9 +55,14 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/myblog')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Only connect if MONGO_URI is explicitly provided, otherwise warn (since frontend uses Mock by default)
+if (process.env.MONGO_URI) {
+    mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB Connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
+} else {
+    console.log('No MONGO_URI provided. Server starting, but database features will fail if used.');
+}
 
 // Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -225,7 +230,7 @@ app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// AI Generation Endpoint (Same as before)
+// AI Generation Endpoint
 app.post('/api/ai/generate', async (req, res) => {
   try {
     const { topic, type, title, context, targetLanguage } = req.body;
