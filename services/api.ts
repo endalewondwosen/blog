@@ -184,10 +184,19 @@ class ApiClient {
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       }
       
-      const user = users.find((u: any) => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+      const userIndex = users.findIndex((u: any) => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+      const user = users[userIndex];
       
       if (!user) {
           throw new Error("Invalid credentials");
+      }
+
+      // AUTO-FIX: If username is admin but role is not admin, fix it.
+      if (user.username.toLowerCase() === 'admin' && user.role !== 'admin') {
+          console.log("Auto-fixing admin role");
+          user.role = 'admin';
+          users[userIndex] = user; // Update in array
+          localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); // Persist fix
       }
 
       const { password: _, ...safeUser } = user;
@@ -235,7 +244,8 @@ class ApiClient {
             joinedAt: Date.now(),
             bookmarks: [],
             bio: "I'm a new writer here!",
-            role: count === 0 ? 'admin' : 'user' // Simple logic: first user is admin
+            // Force admin role if username is admin, otherwise first user is admin
+            role: (username.toLowerCase() === 'admin' || count === 0) ? 'admin' : 'user'
         } as any;
 
         users.push(newUser);
