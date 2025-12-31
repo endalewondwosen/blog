@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Wand2, ArrowLeft, Loader2, Image as ImageIcon, Sparkles, X, Eye, PenLine, Tag, MessageSquare, List, ImagePlus } from 'lucide-react';
+import { Save, Wand2, ArrowLeft, Loader2, Image as ImageIcon, Sparkles, X, Eye, PenLine, Tag, MessageSquare, List, ImagePlus, Bold, Italic, Heading, Quote, Code, Link as LinkIcon, List as ListIcon } from 'lucide-react';
 import { BlogPost, User, ContentReview } from '../types';
 import { api } from '../services/api';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import { useToast } from '../context/ToastContext';
 
 interface EditorProps {
   user: User;
@@ -12,6 +13,8 @@ interface EditorProps {
 const Editor: React.FC<EditorProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -45,7 +48,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
               const post = await api.getPostById(id);
               if (post) {
                 if (post.authorId !== user.id) {
-                    alert("You can only edit your own posts.");
+                    showToast("You can only edit your own posts.", 'error');
                     navigate('/');
                     return;
                 }
@@ -65,7 +68,29 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
       };
       fetchPost();
     }
-  }, [id, user.id, navigate]);
+  }, [id, user.id, navigate, showToast]);
+
+  // Toolbar Logic
+  const insertFormat = (startTag: string, endTag: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const selection = text.substring(start, end);
+    const after = text.substring(end);
+
+    const newText = before + startTag + selection + endTag + after;
+    setContent(newText);
+
+    // Return focus to textarea
+    setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + startTag.length, end + startTag.length);
+    }, 0);
+  };
 
   const handleGenerateAI = async () => {
     if (!aiTopic.trim()) return;
@@ -77,9 +102,10 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
       const generatedContent = await api.generateContent(aiTopic);
       setContent(generatedContent);
       setShowAiModal(false);
+      showToast("Draft generated successfully!", 'success');
     } catch (error) {
       console.error(error);
-      alert("Failed to generate content. Please try again.");
+      showToast("Failed to generate content.", 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -94,12 +120,13 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
             setCoverUrl(imageUrl);
             setShowImageModal(false);
             setImagePrompt('');
+            showToast("Cover image generated!", 'success');
         } else {
-            alert("Could not generate image. Please try again.");
+            showToast("Could not generate image.", 'error');
         }
     } catch (e) {
         console.error(e);
-        alert("Image generation failed.");
+        showToast("Image generation failed.", 'error');
     } finally {
         setIsGeneratingImage(false);
     }
@@ -126,7 +153,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
   // --- AI Assistant Handlers ---
 
   const handleSuggestTags = async () => {
-      if (!content.trim()) return alert("Write some content first!");
+      if (!content.trim()) return showToast("Write some content first!", 'info');
       setIsAssistLoading('tags');
       try {
           const newTags = await api.generateSmartTags(content);
@@ -135,7 +162,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
   };
 
   const handleOptimizeTitle = async () => {
-      if (!content.trim()) return alert("Write some content first!");
+      if (!content.trim()) return showToast("Write some content first!", 'info');
       setIsAssistLoading('titles');
       try {
           const titles = await api.generateTitleSuggestions(title, content);
@@ -144,7 +171,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
   };
 
   const handleReviewContent = async () => {
-      if (!content.trim()) return alert("Write some content first!");
+      if (!content.trim()) return showToast("Write some content first!", 'info');
       setIsAssistLoading('review');
       try {
           const reviewResult = await api.generateContentReview(content);
@@ -185,14 +212,16 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
 
         if (id) {
             await api.updatePost(id, postData);
+            showToast("Post updated successfully!", 'success');
         } else {
             await api.createPost(postData);
+            showToast("Post published successfully!", 'success');
         }
 
         navigate('/');
     } catch (error) {
         console.error("Save failed", error);
-        alert("Failed to save post");
+        showToast("Failed to save post", 'error');
     } finally {
         setIsSaving(false);
     }
@@ -299,6 +328,21 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 border-b pb-4">{title || "Untitled"}</h1>
                     )}
 
+                    {/* Markdown Toolbar */}
+                    {!isPreviewMode && (
+                        <div className="flex flex-wrap gap-1 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                            <button onClick={() => insertFormat('**', '**')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Bold"><Bold size={16} /></button>
+                            <button onClick={() => insertFormat('*', '*')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Italic"><Italic size={16} /></button>
+                            <div className="w-px h-6 bg-gray-300 mx-1 self-center"></div>
+                            <button onClick={() => insertFormat('## ')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Heading 2"><Heading size={16} /></button>
+                            <button onClick={() => insertFormat('> ')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Quote"><Quote size={16} /></button>
+                            <button onClick={() => insertFormat('- ')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="List"><ListIcon size={16} /></button>
+                            <div className="w-px h-6 bg-gray-300 mx-1 self-center"></div>
+                            <button onClick={() => insertFormat('`', '`')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Inline Code"><Code size={16} /></button>
+                            <button onClick={() => insertFormat('[', '](url)')} className="p-2 text-gray-600 hover:bg-white hover:text-indigo-600 rounded transition-colors" title="Link"><LinkIcon size={16} /></button>
+                        </div>
+                    )}
+
                     {/* Content Area or Preview */}
                     <div className="flex-grow">
                         {isPreviewMode ? (
@@ -308,7 +352,8 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                             </div>
                         ) : (
                             <textarea
-                                placeholder="Tell your story... (Markdown supported)"
+                                ref={textareaRef}
+                                placeholder="Tell your story..."
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 className="w-full h-full min-h-[400px] text-lg text-gray-700 leading-relaxed placeholder-gray-300 border-none focus:ring-0 p-0 resize-none bg-transparent outline-none font-mono"
@@ -422,7 +467,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                 </div>
 
                 <div className="space-y-3 text-sm text-gray-500">
-                     <p>Use <strong>Markdown</strong> to format your post:</p>
+                     <p>Use the toolbar or <strong>Markdown</strong> to format:</p>
                      <ul className="list-disc pl-5 space-y-1">
                          <li># for Headers</li>
                          <li>**bold** text</li>

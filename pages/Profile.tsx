@@ -4,6 +4,7 @@ import { User, BlogPost } from '../types';
 import { api } from '../services/api';
 import { Calendar, FileText, Heart, Edit2, Trash2, Loader2, Plus, Bookmark, PenSquare, BookmarkMinus, TrendingUp, ArrowRight } from 'lucide-react';
 import PostCard from '../components/PostCard';
+import { useToast } from '../context/ToastContext';
 
 interface ProfileProps {
   user: User;
@@ -18,6 +19,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Fetch Published Posts
   useEffect(() => {
@@ -74,9 +76,10 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           try {
               await api.deletePost(postId);
               setPosts(prev => prev.filter(p => p.id !== postId));
+              showToast("Post deleted successfully", 'success');
           } catch (e) {
               console.error("Delete failed", e);
-              alert("Failed to delete post");
+              showToast("Failed to delete post", 'error');
           } finally {
               setDeletingId(null);
           }
@@ -88,6 +91,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
     try {
         await api.toggleBookmark(postId);
         setSavedPosts(prev => prev.filter(p => p.id !== postId));
+        showToast("Removed from reading list", 'success');
         
         // If we removed the last one, fetch trending
         if (savedPosts.length <= 1) {
@@ -97,6 +101,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
         }
     } catch (e) {
         console.error("Failed to remove bookmark", e);
+        showToast("Failed to update bookmark", 'error');
     }
   };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { PenSquare, LogOut, User as UserIcon, LogIn } from 'lucide-react';
+import { PenSquare, LogOut, User as UserIcon, LogIn, Shield } from 'lucide-react';
 import { User } from '../types';
 
 interface NavbarProps {
@@ -27,6 +27,20 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
+                 {user.role === 'admin' && (
+                    <Link
+                    to="/admin"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        isActive('/admin')
+                        ? 'bg-purple-50 text-purple-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                    >
+                    <Shield size={18} />
+                    <span className="hidden sm:inline">Admin</span>
+                    </Link>
+                 )}
+
                 <Link
                   to="/create"
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
