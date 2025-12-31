@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Wand2, ArrowLeft, Loader2, Image as ImageIcon, Sparkles, X, Eye, PenLine, Tag, MessageSquare, List, ImagePlus, Bold, Italic, Heading, Quote, Code, Link as LinkIcon, List as ListIcon } from 'lucide-react';
+import { Save, Wand2, ArrowLeft, Loader2, Image as ImageIcon, Sparkles, X, Eye, PenLine, Tag, MessageSquare, List, ImagePlus, Bold, Italic, Heading, Quote, Code, Link as LinkIcon, List as ListIcon, Mic, StopCircle, Trash2 } from 'lucide-react';
 import { BlogPost, User, ContentReview } from '../types';
 import { api } from '../services/api';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -28,6 +28,13 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   
+  // Audio State
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null); // For playback and saving
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // Modals
   const [aiTopic, setAiTopic] = useState('');
   const [showAiModal, setShowAiModal] = useState(false);
@@ -56,6 +63,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                 setContent(post.content);
                 setCoverUrl(post.coverUrl);
                 setTags(post.tags || []);
+                if (post.audioUrl) setAudioUrl(post.audioUrl);
               } else {
                   navigate('/');
               }
@@ -150,6 +158,80 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  // --- Voice Draft Logic ---
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processAudio(audioBlob);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      showToast("Recording started... speak your thoughts!", 'info');
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      showToast("Could not access microphone.", 'error');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processAudio = async (blob: Blob) => {
+    setIsProcessingAudio(true);
+    try {
+        // Convert blob to Data URL for saving and playback
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+            const base64DataUrl = reader.result as string;
+            setAudioUrl(base64DataUrl); // Store for playback/saving
+            
+            // Extract pure base64 for API call
+            const base64String = base64DataUrl.split(',')[1];
+            
+            try {
+                const generatedText = await api.generatePostFromAudio(base64String, blob.type);
+                setContent(prev => prev ? prev + "\n\n" + generatedText : generatedText);
+                showToast("Audio transcribed and attached!", 'success');
+            } catch (err) {
+                 console.error("Transcription failed", err);
+                 showToast("Audio attached, but transcription failed.", 'info');
+            } finally {
+                setIsProcessingAudio(false);
+            }
+        };
+    } catch (error) {
+        console.error("Audio processing failed", error);
+        showToast("Failed to process audio.", 'error');
+        setIsProcessingAudio(false);
+    }
+  };
+  
+  const removeAudio = () => {
+      setAudioUrl(null);
+  };
+
   // --- AI Assistant Handlers ---
 
   const handleSuggestTags = async () => {
@@ -198,11 +280,12 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
 
         const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
-        const postData = {
+        const postData: Partial<BlogPost> = {
             title,
             content,
             excerpt,
             coverUrl: coverUrl || `https://picsum.photos/800/400?random=${Date.now()}`,
+            audioUrl: audioUrl || undefined, // Save the audio
             tags,
             authorId: user.id,
             authorName: user.username,
@@ -247,6 +330,33 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
           Back
         </button>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Voice Draft Button */}
+            {!isRecording && !isProcessingAudio && (
+                <button
+                    onClick={startRecording}
+                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-all shadow-sm border border-rose-100 font-medium text-sm flex-grow sm:flex-grow-0 justify-center"
+                    title="Dictate your post"
+                >
+                    <Mic size={18} />
+                    <span>Voice Draft</span>
+                </button>
+            )}
+            {isRecording && (
+                <button
+                    onClick={stopRecording}
+                    className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all shadow-md animate-pulse font-medium text-sm flex-grow sm:flex-grow-0 justify-center"
+                >
+                    <StopCircle size={18} />
+                    <span>Stop Recording</span>
+                </button>
+            )}
+            {isProcessingAudio && (
+                 <button disabled className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed text-sm flex-grow sm:flex-grow-0 justify-center">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Transcribing...</span>
+                 </button>
+            )}
+
             <button
                 onClick={() => setShowAiModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium text-sm flex-grow sm:flex-grow-0 justify-center"
@@ -327,6 +437,24 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                     ) : (
                          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 border-b pb-4">{title || "Untitled"}</h1>
                     )}
+                    
+                    {/* Audio Preview */}
+                    {audioUrl && (
+                        <div className="mb-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-4">
+                             <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full">
+                                 <Mic size={20} />
+                             </div>
+                             <div className="flex-grow">
+                                 <p className="text-xs font-semibold text-indigo-900 mb-1">Attached Recording</p>
+                                 <audio src={audioUrl} controls className="w-full h-8" />
+                             </div>
+                             {!isPreviewMode && (
+                                <button onClick={removeAudio} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                    <Trash2 size={18} />
+                                </button>
+                             )}
+                        </div>
+                    )}
 
                     {/* Markdown Toolbar */}
                     {!isPreviewMode && (
@@ -353,7 +481,7 @@ const Editor: React.FC<EditorProps> = ({ user }) => {
                         ) : (
                             <textarea
                                 ref={textareaRef}
-                                placeholder="Tell your story..."
+                                placeholder="Tell your story... (or click Voice Draft to dictate)"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 className="w-full h-full min-h-[400px] text-lg text-gray-700 leading-relaxed placeholder-gray-300 border-none focus:ring-0 p-0 resize-none bg-transparent outline-none font-mono"
