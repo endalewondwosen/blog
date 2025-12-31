@@ -8,7 +8,8 @@ import {
   generateCoverImage,
   generateAudio,
   generatePostQA,
-  translatePost
+  translatePost,
+  generatePostFromAudio
 } from './geminiService';
 
 // --- MOCK DATABASE (For Preview Environment) ---
@@ -651,6 +652,15 @@ class ApiClient {
     });
     const data = await res.json();
     return data.audio;
+  }
+  
+  async generatePostFromAudio(base64Audio: string, mimeType: string): Promise<string> {
+      if (this.useMock) {
+          return generatePostFromAudio(base64Audio, mimeType);
+      }
+      // Since backend is not fully implemented for multimodal in this demo,
+      // we fallback to frontend generation or would call a specific endpoint.
+      return generatePostFromAudio(base64Audio, mimeType);
   }
 
   async askPostQuestion(content: string, question: string): Promise<string> {

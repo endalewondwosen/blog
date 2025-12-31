@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe, Share2, Linkedin, Twitter, Link as LinkIcon, Check, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Edit2, Clock, ArrowLeft, Calendar, Loader2, Heart, Volume2, Pause, Play, Globe, Share2, Linkedin, Twitter, Link as LinkIcon, Check, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Mic } from 'lucide-react';
 import { BlogPost, User } from '../types';
 import { api } from '../services/api';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -477,6 +477,19 @@ const PostView: React.FC<PostViewProps> = ({ user }) => {
                     </div>
                 )}
             </div>
+            
+            {/* Original Audio Recording Player */}
+            {post.audioUrl && (
+                <div className="mb-10 p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full">
+                            <Mic size={20} />
+                        </div>
+                        <h3 className="font-bold text-gray-900">Original Voice Recording</h3>
+                    </div>
+                    <audio src={post.audioUrl} controls className="w-full h-10 shadow-sm rounded-lg" />
+                </div>
+            )}
 
             <div className="prose prose-lg prose-indigo max-w-none text-gray-800 leading-8">
                {isTranslating ? (

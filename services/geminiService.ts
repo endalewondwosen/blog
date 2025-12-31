@@ -163,6 +163,34 @@ export const generateAudio = async (text: string): Promise<string | null> => {
   }
 };
 
+export const generatePostFromAudio = async (base64Audio: string, mimeType: string): Promise<string> => {
+  const ai = getClient();
+  try {
+    // Switch to gemini-2.0-flash-exp for robust multimodal audio support
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Audio
+            }
+          },
+          {
+            text: "Listen to this audio recording. It contains a draft or thoughts for a blog post. Transcribe it and restructure it into a well-formatted, professional blog post with headers and paragraphs. Do not include a title."
+          }
+        ]
+      }
+    });
+
+    return response.text || "Failed to transcribe audio.";
+  } catch (error) {
+    console.error("Gemini API Error (Voice-to-Text):", error);
+    throw error;
+  }
+};
+
 export const generatePostQA = async (content: string, question: string): Promise<string> => {
   const ai = getClient();
   try {

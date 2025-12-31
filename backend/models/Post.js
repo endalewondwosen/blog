@@ -24,6 +24,10 @@ const postSchema = new mongoose.Schema({
   coverUrl: {
     type: String
   },
+  audioUrl: {
+    type: String, // Store Base64 Data URI or URL
+    default: null
+  },
   tags: {
     type: [String],
     default: []

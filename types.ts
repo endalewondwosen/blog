@@ -23,6 +23,7 @@ export interface BlogPost {
   content: string;
   excerpt: string;
   coverUrl: string;
+  audioUrl?: string; // Optional URL for attached voice recording
   tags: string[];
   likes: number;
   comments: Comment[];
