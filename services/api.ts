@@ -88,7 +88,7 @@ const INITIAL_POSTS: BlogPost[] = [
     title: 'The Future of AI in Web Development',
     content: "Artificial Intelligence is rapidly transforming how we build and interact with the web. From intelligent code completion tools like GitHub Copilot to sophisticated generative models that can draft entire layouts, the landscape is shifting. \n\n### The Shift to Intent-Based Coding\n\nDevelopers are no longer just writers of syntax; they are becoming **architects of intent**. We can now describe what we want, and AI helps bridge the gap to implementation. However, this doesn't replace the need for deep understanding. It elevates it. We must understand the principles of design, accessibility, and performance even more deeply to guide these powerful tools effectively.\n\n> \"Creativity and problem-solving skills are more valuable than rote memorization of API methods.\"\n\nThe future is bright, collaborative, and incredibly fast-paced.",
     excerpt: 'Artificial Intelligence is rapidly transforming how we build and interact with the web...',
-    coverUrl: 'https://picsum.photos/800/400?random=1',
+    coverUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800',
     tags: ['AI', 'Web Development', 'Future'],
     likes: 42,
     comments: [
@@ -112,7 +112,7 @@ const INITIAL_POSTS: BlogPost[] = [
     title: 'Minimalism in UI Design',
     content: "Minimalism isn't just about using less; it's about making space for what matters. By stripping away the non-essential, we allow the user's focus to land squarely on the content and functionality that drives the application.\n\n### The Power of White Space\n\nWhite space is not empty space—it is an **active design element**. It provides breathing room, reduces cognitive load, and creates a sense of elegance and sophistication.\n\n- Reduces cognitive load\n- Improves readability\n- Creates hierarchy\n\nWhen we design with restraint, every element that remains must earn its place.",
     excerpt: "Minimalism isn't just about using less; it's about making space for what matters...",
-    coverUrl: 'https://picsum.photos/800/400?random=2',
+    coverUrl: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?auto=format&fit=crop&q=80&w=800',
     tags: ['Design', 'UI/UX', 'Minimalism'],
     likes: 128,
     comments: [],
