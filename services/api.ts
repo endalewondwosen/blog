@@ -89,7 +89,7 @@ const INITIAL_POSTS: BlogPost[] = [
     content: "Artificial Intelligence is rapidly transforming how we build and interact with the web. From intelligent code completion tools like GitHub Copilot to sophisticated generative models that can draft entire layouts, the landscape is shifting. \n\n### The Shift to Intent-Based Coding\n\nDevelopers are no longer just writers of syntax; they are becoming **architects of intent**. We can now describe what we want, and AI helps bridge the gap to implementation. However, this doesn't replace the need for deep understanding. It elevates it. We must understand the principles of design, accessibility, and performance even more deeply to guide these powerful tools effectively.\n\n> \"Creativity and problem-solving skills are more valuable than rote memorization of API methods.\"\n\nThe future is bright, collaborative, and incredibly fast-paced.",
     excerpt: 'Artificial Intelligence is rapidly transforming how we build and interact with the web...',
     coverUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800',
-    tags: ['AI', 'Web Development', 'Future'],
+    tags: ['AI', 'Engineering', 'Future'],
     likes: 42,
     comments: [
         {
@@ -113,7 +113,7 @@ const INITIAL_POSTS: BlogPost[] = [
     content: "Minimalism isn't just about using less; it's about making space for what matters. By stripping away the non-essential, we allow the user's focus to land squarely on the content and functionality that drives the application.\n\n### The Power of White Space\n\nWhite space is not empty space—it is an **active design element**. It provides breathing room, reduces cognitive load, and creates a sense of elegance and sophistication.\n\n- Reduces cognitive load\n- Improves readability\n- Creates hierarchy\n\nWhen we design with restraint, every element that remains must earn its place.",
     excerpt: "Minimalism isn't just about using less; it's about making space for what matters...",
     coverUrl: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?auto=format&fit=crop&q=80&w=800',
-    tags: ['Design', 'UI/UX', 'Minimalism'],
+    tags: ['Design', 'Minimalism'],
     likes: 128,
     comments: [],
     authorId: 'alice-doe',
@@ -121,6 +121,21 @@ const INITIAL_POSTS: BlogPost[] = [
     authorAvatar: 'https://picsum.photos/100/100?random=101',
     createdAt: Date.now() - 50000000,
     readTimeMinutes: 2,
+  },
+  {
+    id: '6',
+    title: 'Scalable Node.js Patterns: Beyond the Event Loop',
+    content: "Node.js is famous for its non-blocking I/O, but building truly scalable backend systems requires more than just asynchronous callbacks. As our applications grow, we must consider architecture, streaming, and process management.\n\n### Streams over Buffers\n\nMemory management is critical. When processing large datasets (like CSV imports or image transformations), buffering everything into RAM is a recipe for crashes. Using **Node Streams**, we can process data chunk-by-chunk, keeping our memory footprint distinctive low.\n\n### The BFF Pattern (Backend for Frontend)\n\nIn complex microservice architectures, a BFF layer helps aggregate data specifically for the UI needs, reducing over-fetching and simplifying client-side logic. This perfectly complements the 'Service Layer' approach we use on the frontend.",
+    excerpt: "Building scalable backend systems requires more than just asynchronous callbacks. Explore Streams, Clustering, and BFF patterns...",
+    coverUrl: 'https://images.unsplash.com/photo-1558494949-efc535b5c479?auto=format&fit=crop&q=80&w=800',
+    tags: ['Backend', 'System Design', 'Node.js'],
+    likes: 89,
+    comments: [],
+    authorId: 'admin',
+    authorName: 'Admin',
+    authorAvatar: 'https://picsum.photos/100/100?random=999',
+    createdAt: Date.now() - 12000000,
+    readTimeMinutes: 5,
   }
 ];
 

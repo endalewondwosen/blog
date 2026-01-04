@@ -82,14 +82,14 @@ const Home: React.FC = () => {
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-16 lg:py-24">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-sm font-medium mb-6 shadow-sm">
             <Sparkles size={14} className="fill-indigo-100" />
-            <span>Senior Frontend Engineering Portfolio</span>
+            <span>Senior Full-Stack Engineering Portfolio</span>
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight mb-6">
-            Engineering the <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Future of UI</span>
+            Engineering the <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Future of Web</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-10">
-            Deep dives into React, Performance, Accessibility, and AI-Driven Development. 
-            Built with the MERN Stack.
+            Deep dives into React, Scalable Systems, Accessibility, and AI-Driven 
+            Development. Built with the MERN Stack.
           </p>
 
           {/* Search Bar */}
