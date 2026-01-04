@@ -84,6 +84,7 @@ const Home: React.FC = () => {
             <Sparkles size={14} className="fill-indigo-100" />
             <span>Senior Full-Stack Engineering Portfolio</span>
           </div>
+          {/* djfhdj */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight mb-6">
             Engineering the <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Future of Web</span>
           </h1>
